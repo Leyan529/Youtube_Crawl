@@ -25,8 +25,24 @@ def vedio_detail(vedio_id):
     return detail
 
 
-def channel_detail():
-    print()
+def channel_detail(channelId):
+    detail = {}
+    url = "https://www.googleapis.com/youtube/v3/channels?part=snippet%2CcontentDetails%2Cstatistics"
+    url = url + '&id=' + channelId
+    url = url + '&key=' + DEVELOPER_KEY
+    data = requests.get(url)
+    soup = BeautifulSoup(data.text, 'html.parser')
+    d = json.loads(soup.text)
+    subscriberCount = d['items'][0]['statistics']['subscriberCount']
+    videoCount = d['items'][0]['statistics']['videoCount']
+    date = d['items'][0]['snippet']['publishedAt'][0:10]
+    title = d['items'][0]['snippet']['title']
+    detail['id'] = channelId
+    detail['title'] = title
+    detail['subscriberCount'] = int(subscriberCount)
+    detail['videoCount'] = int(videoCount)
+    detail['date'] = date
+    return detail
 
 
 def get_channel_subsubscribers(channel_id):
@@ -39,30 +55,30 @@ def get_channel_subsubscribers(channel_id):
     return int(d['items'][0]['statistics']['subscriberCount'])
 
 
-# query = search Field , condition = By where ,argu = 條件值 , forAll(查詢全部) [True:False]
-def search(query, condition, value, forAll , order):
-    if query == Protocol.channelId and condition == Protocol.channelName:
+# query = search Field , condition = By where ,argu = 條件值 , searchAll(查詢全部) [True:False] , order 排序條件 ,q 關鍵字查詢[True:False]
+def search(query, condition, value, searchAll, order, stock):
+    if query == 'channelId' and condition == 'channelName':
         channelName = value
-        return getchannelId_bychannelName(channelName)
+        return getchannelId_bychannelName(channelName,order)
 
-    elif query == Protocol.video and condition == Protocol.channelName:
-        channelName = value
-        getVideo_byChannelName(channelName,forAll)
+    elif query == 'video' and condition == 'channelName':
+        channel = value
+        vedioList = getVideo_byChannel(channel, searchAll, order, stock)
+        return vedioList
 
-
-    elif query == Protocol.channelName and condition == Protocol.favroiteType:
+    elif query == 'channelName' and condition == 'favroiteType':
         typeName = value
-        getChannel_byFavroiteType(typeName)
+        channlList = getChannel_byFavroiteType(typeName, order)
+        return channlList
 
 
-def getChannel_byFavroiteType(typeName):
-    channeList = []
+def getChannel_byFavroiteType(typeName, order):
     # to-do
     print(typeName + ' Searching start...\n')
     url = 'https://www.googleapis.com/youtube/v3/search?part=snippet'
     url = url + '&q=' + typeName
     url = url + '&max-results=' + '3'
-    url = url + '&order=' + 'viewCount'
+    url = url + '&order=' + order
     url = url + '&type=' + 'channel'
     url = url + '&key=' + DEVELOPER_KEY
     data = requests.get(url)
@@ -70,27 +86,30 @@ def getChannel_byFavroiteType(typeName):
     d = json.loads(soup.text)
     search_result = d['items']
     token = d['nextPageToken']
-
+    channeList = []
     for item in search_result:
-        # getChannelDetail
-        print(item['snippet']['title'] + item['snippet']['channelId'])
-        search(Protocol.video, Protocol.channelName, item['snippet']['title'],False ,None)
-    #
+        channelDesc = channel_detail(item['snippet']['channelId'])
+        channeList.append(channelDesc)
+        search(Protocol.video, Protocol.channelName, channelDesc, Protocol.searchAll_False, Protocol.order_ByViewCount,
+               Protocol.stock_False)
     return channeList
 
 
-def getVideo_byChannelName(channelName,forAll):
-    print(channelName + ' Searching start...\n')
+def getVideo_byChannel(channel, searchAll, order, stock):
+    channelName = channel['title']
+    channelId = channel['id']
+    print(channelName + "    " + channelId + '      Searching start...\n')
     videos = []
-    channelId = search(Protocol.channelId, Protocol.channelName, channelName , True , None)
+    # channelId = search(Protocol.channelId, Protocol.channelName, channelName, Protocol.searchAll_True, None,Protocol.stock_False)
     token = ''
     index = 0
     while True:
         url = 'https://www.googleapis.com/youtube/v3/search?part=snippet'
-        url = url + '&q=' + channelName
+        if stock == True:
+            url = url + '&q=' + channelName
         url = url + '&channelId=' + channelId
         url = url + '&max-results=' + '50'
-        url = url + '&order=' + 'date'
+        url = url + '&order=' + order
         url = url + '&type=' + 'video'
         url = url + '&pageToken=' + token
         url = url + '&key=' + DEVELOPER_KEY
@@ -99,9 +118,8 @@ def getVideo_byChannelName(channelName,forAll):
         d = json.loads(soup.text)
         search_result = d['items']
         token = d['nextPageToken']
-
         for item in search_result:
-            if condition.filter(item, channelName) == True:
+            if condition.filter(item, channelName) == True or stock != True:
                 detail = vedio_detail(item['id']['videoId'])
                 videos.append('%s , publish time = %s ,viewCount = %s , %s ,jpg_source = %s , url = %s'
                               % (item['snippet']['title'],
@@ -116,18 +134,18 @@ def getVideo_byChannelName(channelName,forAll):
 
         if token == None or len(search_result) == 0 or len(videos) > 20:
             print(channelName + ' Searching over...\n')
-            token = ''
             break
 
 
-def getchannelId_bychannelName(channelName):
+def getchannelId_bychannelName(channelName,order):
     url = 'https://www.googleapis.com/youtube/v3/search?part=snippet'
-    url = url + '&q=' + channelName
+    url = url + '&q=' + channelName + "official"
     url = url + '&max-results=' + '10'
-    if channelName == 'EXO':
-        url = url + '&order=' + 'videoCount'
-    else:
-        url = url + '&order=' + 'relevance'
+    # if channelName == 'EXO':
+    #     url = url + '&order=' + 'videoCount'
+    # else:
+    #     url = url + '&order=' + 'relevance'
+    url = url + '&order=' + order
     url = url + '&type=' + 'channel'
     url = url + '&key=' + DEVELOPER_KEY
     data = requests.get(url)
@@ -137,10 +155,11 @@ def getchannelId_bychannelName(channelName):
     max['number'] = 0
     search_result = d['items']
     for items in search_result:
-        subNumber = get_channel_subsubscribers(items['snippet']['channelId'])
-        if subNumber > max['number']:
-            max['title'] = items['snippet']['channelTitle']
-            max['channel'] = items['snippet']['channelId']
-            max['number'] = subNumber
-    # print(max['title'])
+        detail = channel_detail(items['snippet']['channelId'])
+        subNumber = detail['subscriberCount']
+        if int(subNumber) > max['number']:
+            max['title'] = detail['title']
+            max['channel'] = detail['id']
+            max['number'] = detail['subscriberCount']
+    print(max['title'])
     return max['channel']

@@ -55,15 +55,15 @@ def get_channel_subsubscribers(channel_id):
     return int(d['items'][0]['statistics']['subscriberCount'])
 
 
-# query = search Field , condition = By where ,argu = 條件值 , searchAll(查詢全部) [True:False] , order 排序條件 ,q 關鍵字查詢[True:False]
-def search(query, condition, value, searchAll, order, stock):
+# query = search Field , condition = By where ,argu = 條件值 , searchAll(查詢全部) [True:False] , order 排序條件 ,stock 關鍵字查詢[True:False] ,Filter關鍵字
+def search(query, condition, value, searchAll, order, stock,filter):
     if query == 'channelId' and condition == 'channelName':
         channelName = value
         return getchannelId_bychannelName(channelName,order)
 
     elif query == 'video' and condition == 'channelName':
         channel = value
-        vedioList = getVideo_byChannel(channel, searchAll, order, stock)
+        vedioList = getVideo_byChannel(channel, searchAll, order, stock,filter)
         return vedioList
 
     elif query == 'channelName' and condition == 'favroiteType':
@@ -91,11 +91,11 @@ def getChannel_byFavroiteType(typeName, order):
         channelDesc = channel_detail(item['snippet']['channelId'])
         channeList.append(channelDesc)
         search(Protocol.video, Protocol.channelName, channelDesc, Protocol.searchAll_False, Protocol.order_ByViewCount,
-               Protocol.stock_False)
+               Protocol.stock_False,None)
     return channeList
 
 
-def getVideo_byChannel(channel, searchAll, order, stock):
+def getVideo_byChannel(channel, searchAll, order, stock,filter):
     channelName = channel['title']
     channelId = channel['id']
     print(channelName + "    " + channelId + '      Searching start...\n')
@@ -106,7 +106,7 @@ def getVideo_byChannel(channel, searchAll, order, stock):
     while True:
         url = 'https://www.googleapis.com/youtube/v3/search?part=snippet'
         if stock == True:
-            url = url + '&q=' + channelName
+            url = url + '&q=' + filter
         url = url + '&channelId=' + channelId
         url = url + '&max-results=' + '50'
         url = url + '&order=' + order
@@ -119,7 +119,7 @@ def getVideo_byChannel(channel, searchAll, order, stock):
         search_result = d['items']
         token = d['nextPageToken']
         for item in search_result:
-            if condition.filter(item, channelName) == True or stock != True:
+            if (stock == True and condition.filter(item,filter) == True) or (stock == False and condition.filter(item,'') == True):
                 detail = vedio_detail(item['id']['videoId'])
                 videos.append('%s , publish time = %s ,viewCount = %s , %s ,jpg_source = %s , url = %s'
                               % (item['snippet']['title'],
@@ -132,14 +132,17 @@ def getVideo_byChannel(channel, searchAll, order, stock):
                 print(videos[index])
                 index = index + 1
 
-        if token == None or len(search_result) == 0 or len(videos) > 20:
+        if stock == False and len(videos) > 20:
+            break
+        elif token == None or len(search_result) == 0 :
             print(channelName + ' Searching over...\n')
             break
+    return videos
 
 
 def getchannelId_bychannelName(channelName,order):
     url = 'https://www.googleapis.com/youtube/v3/search?part=snippet'
-    url = url + '&q=' + channelName + "official"
+    url = url + '&q=' + channelName
     url = url + '&max-results=' + '10'
     # if channelName == 'EXO':
     #     url = url + '&order=' + 'videoCount'

@@ -74,7 +74,7 @@ def search(query, condition, value, searchAll, order, stock, filter):
 
 def getChannel_byFavroiteType(typeName, order):
     # to-do
-    print(typeName + ' Searching start...\n')
+    print(typeName + ' start...\n')
     url = 'https://www.googleapis.com/youtube/v3/search?part=snippet'
     url = url + '&q=' + typeName
     url = url + '&max-results=' + '3'
@@ -100,15 +100,18 @@ def getVideo_byChannel(channel, searchAll, order, stock, filter):
     channelId = channel['id']
     print(channelName + "    " + channelId + '      Searching start...\n')
     videos = []
-    # channelId = search(Protocol.channelId, Protocol.channelName, channelName, Protocol.searchAll_True, None,Protocol.stock_False)
     token = ''
     index = 0
     while True:
         url = 'https://www.googleapis.com/youtube/v3/search?part=snippet'
         if stock == True:
             url = url + '&q=' + filter
+        else:
+            url = url + '&q=' + "音樂"
+        # if filter =="GFRIEND":
+        #     url = url + "MV"
         url = url + '&channelId=' + channelId
-        url = url + '&max-results=' + '5'
+        url = url + '&max-results=' + '50'
         url = url + '&order=' + order
         url = url + '&type=' + 'video'
         url = url + '&pageToken=' + token
@@ -120,9 +123,8 @@ def getVideo_byChannel(channel, searchAll, order, stock, filter):
             search_result = d['items']
             token = d['nextPageToken']
             for item in search_result:
-                if (stock == True and condition.filter(item, filter) == True) or (
-                        stock == False and condition.filter(item, '') == True):
-                    #and condition.filter(item, '') == True
+                if (stock == True and condition.condition_default(item, filter) == True) or (
+                                stock == False and condition.condition_normal(item) == True):
                     detail = vedio_detail(item['id']['videoId'])
                     videos.append('%s , publish time = %s ,viewCount = %s , %s ,url = %s, jpg_source = %s '
                                   % (item['snippet']['title'],
@@ -136,16 +138,16 @@ def getVideo_byChannel(channel, searchAll, order, stock, filter):
                     index = index + 1
 
             if stock == False and (len(videos) > 20 or len(videos) == 0):
-                if len(videos)>0:
+                if len(videos) == 0:
                     print(" Searching over... , But can't found data in " + channelName + " Searching.. ")
-                else:
+                elif len(videos) > 0:
                     print(channelName + ' Searching over...\n')
                 break
-            elif token == None or len(search_result) == 0 or len(videos) == 0:
+            elif stock == True and (token == None or len(search_result) == 0):
                 print(channelName + ' Searching over...\n')
                 break
         except:
-            print(" Searching over... , But can't found data in " + channelName + " Searching.. ")
+            print(" Searching over... , Can't found data or Error " + channelName + " Searching.. ")
             break
     return videos
 

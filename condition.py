@@ -19,9 +19,8 @@ def filter(data, keyword):
 
 def condition_default(data, filter):
     if data['id']['kind'] == 'youtube#video' and \
-                    filter in data['snippet']['title'] and \
             ('MV' in data['snippet']['title'] or 'M/V' in data['snippet']['title']) and \
-            'Teaser' not in data['snippet']['title'] and \
+                    'Teaser' not in data['snippet']['title'] and \
                     'TEASER' not in data['snippet']['title'] and \
                     'INTRO' not in data['snippet']['title'] and \
                     'BEHIND' not in data['snippet']['title'] and \
@@ -29,7 +28,9 @@ def condition_default(data, filter):
                     'Special Clips' not in data['snippet']['title'] and \
                     'Dance Practice' not in data['snippet']['title'] and \
                     'Stage' not in data['snippet']['title'] and \
-                    'Choreography' not in data['snippet']['title']:
+                    'Choreography' not in data['snippet']['title'] and \
+            (filter in data['snippet']['title'] or "GFRIEND" in filter):
+
         return True
     else:
         return False
@@ -45,7 +46,7 @@ def condition_normal(data):
                     'Special Clips' not in data['snippet']['title'] and \
                     'Dance Practice' not in data['snippet']['title'] and \
                     'Stage' not in data['snippet']['title'] and \
-            'Choreography' not in data['snippet']['title']:
+                    'Choreography' not in data['snippet']['title']:
         return True
     else:
         return False

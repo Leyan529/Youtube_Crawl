@@ -29,10 +29,10 @@ Group_list = [{'Name': 'BTS', 'channelId': 'UC3IZKseVpdzPSBaWxBxundA','Filter':'
 
 # 使用者輸入用模糊查詢dict內的key
 Type_list = [{'TYPE': 'KPOP'},
-              {'TYPE': 'JPOP'},
-              {'TYPE': 'hiphop'},
-              {'TYPE': 'Rap'},
+              {'TYPE': '日本流行歌'},
+              {'TYPE': 'HIP HOP'},
+              {'TYPE': '饒舌'},
               {'TYPE': '嘻哈'},
-              {'TYPE': '抒情'},
+              {'TYPE': 'C-POP'},
               ]
 

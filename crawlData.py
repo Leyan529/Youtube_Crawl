@@ -3,7 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 import json
 import condition
-import Protocol
+import pandas as pd
 
 DEVELOPER_KEY = 'AIzaSyDWX7321N79YcXyFbulSEdU1zh1RIFM2Gg'
 
@@ -16,12 +16,17 @@ def vedio_detail(vedio_id):
     data = requests.get(url)
     soup = BeautifulSoup(data.text, 'html.parser')
     d = json.loads(soup.text)
-    viewCount = d['items'][0]['statistics']['viewCount']
-    date = d['items'][0]['snippet']['publishedAt'][0:10]
-    title = d['items'][0]['snippet']['title']
-    detail['viewCount'] = viewCount
-    detail['date'] = date
-    detail['title'] = title
+
+    detail['name'] = d['items'][0]['snippet']['title']
+    detail['id'] = vedio_id
+    detail['url'] = "https://www.youtube.com/watch?v=" + vedio_id,
+    detail['publishDate'] = d['items'][0]['snippet']['publishedAt'][0:10]
+    detail['viewCount'] = d['items'][0]['statistics']['viewCount']
+    detail['tags'] = d['items'][0]['snippet']['tags']
+    detail['description'] = d['items'][0]['snippet']['description']
+    detail['picture'] = d['items'][0]['snippet']['thumbnails']['medium']['url']
+    # df = pd.DataFrame([detail], columns=detail.keys())
+    # print(df.iloc[0]['viewCount'])
     return detail
 
 
@@ -100,6 +105,7 @@ def getVideo_byChannel(channel, searchAll, order, stock, filter):
     channelId = channel['id']
     print(channelName + "    " + channelId + '      Searching start...\n')
     videos = []
+    rowDataList = []
     token = ''
     index = 0
     while True:
@@ -108,8 +114,6 @@ def getVideo_byChannel(channel, searchAll, order, stock, filter):
             url = url + '&q=' + filter
         else:
             url = url + '&q=' + "音樂"
-        # if filter =="GFRIEND":
-        #     url = url + "MV"
         url = url + '&channelId=' + channelId
         url = url + '&max-results=' + '50'
         url = url + '&order=' + order
@@ -126,30 +130,29 @@ def getVideo_byChannel(channel, searchAll, order, stock, filter):
                 if (stock == True and condition.condition_default(item, filter) == True) or (
                                 stock == False and condition.condition_normal(item) == True):
                     detail = vedio_detail(item['id']['videoId'])
-                    videos.append('%s , publish time = %s ,viewCount = %s , %s ,url = %s, jpg_source = %s '
-                                  % (item['snippet']['title'],
-                                     detail['date'],
-                                     detail['viewCount'],
-                                     item['snippet']['channelId'],
-                                     "https://www.youtube.com/watch?v=" + item['id']['videoId'],
-                                     item['snippet']['thumbnails']['high']['url']
-                                     ))
-                    print(videos[index])
+                    rowData = []
+                    for key in detail.keys():
+                        rowData.append(detail[key])
+                        # print(subDf)
+                    rowDataList.append(rowData)
+                    print("搜尋到第" + str(index) + "筆資料...")
                     index = index + 1
 
-            if stock == False and (len(videos) > 20 or len(videos) == 0):
-                if len(videos) == 0:
+            if stock == False and (len(rowDataList) > 20 or len(rowDataList) == 0):
+                if len(rowDataList) == 0:
                     print(" Searching over... , But can't found data in " + channelName + " Searching.. ")
-                elif len(videos) > 0:
+                elif len(rowDataList) > 0:
                     print(channelName + ' Searching over...\n')
                 break
             elif stock == True and (token == None or len(search_result) == 0):
                 print(channelName + ' Searching over...\n')
                 break
         except:
-            print(" Searching over... , Can't found data or Error " + channelName + " Searching.. ")
+            print("Can't found data or Error " + channelName)
             break
-    return videos
+    df = pd.DataFrame(rowDataList,
+                      columns=['name', 'id', 'url', 'publishDate', 'viewCount', 'tags', 'description', 'picture'])
+    return df
 
 
 def getchannelId_bychannelName(channelName, order):

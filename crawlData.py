@@ -18,13 +18,14 @@ def vedio_detail(vedio_id):
     d = json.loads(soup.text)
 
     detail['name'] = d['items'][0]['snippet']['title']
-    detail['id'] = vedio_id
+    detail['vedio_id'] = vedio_id
     detail['url'] = "https://www.youtube.com/watch?v=" + vedio_id,
     detail['publishDate'] = d['items'][0]['snippet']['publishedAt'][0:10]
     detail['viewCount'] = d['items'][0]['statistics']['viewCount']
     detail['tags'] = d['items'][0]['snippet']['tags']
     detail['description'] = d['items'][0]['snippet']['description']
     detail['picture'] = d['items'][0]['snippet']['thumbnails']['medium']['url']
+    detail['Is DownLoad?'] = 'N'
     # df = pd.DataFrame([detail], columns=detail.keys())
     # print(df.iloc[0]['viewCount'])
     return detail
@@ -38,15 +39,14 @@ def channel_detail(channelId):
     data = requests.get(url)
     soup = BeautifulSoup(data.text, 'html.parser')
     d = json.loads(soup.text)
-    subscriberCount = d['items'][0]['statistics']['subscriberCount']
-    videoCount = d['items'][0]['statistics']['videoCount']
-    date = d['items'][0]['snippet']['publishedAt'][0:10]
-    title = d['items'][0]['snippet']['title']
-    detail['id'] = channelId
-    detail['title'] = title
-    detail['subscriberCount'] = int(subscriberCount)
-    detail['videoCount'] = int(videoCount)
-    detail['date'] = date
+    detail['channel_name'] = d['items'][0]['snippet']['title']
+    detail['channel_id'] = channelId
+    detail['description'] = d['items'][0]['snippet']['description']
+    detail['subscriberCount'] = int(d['items'][0]['statistics']['subscriberCount'])
+    detail['videoCount'] = int(d['items'][0]['statistics']['videoCount'])
+    detail['viewCount'] = int(d['items'][0]['statistics']['viewCount'])
+    detail['publishDate'] = d['items'][0]['snippet']['publishedAt'][0:10]
+    detail['picture'] = d['items'][0]['snippet']['thumbnails']['medium']['url']
     return detail
 
 
@@ -64,20 +64,20 @@ def get_channel_subsubscribers(channel_id):
 def search(query, condition, value, searchAll, order, stock, filter):
     if query == 'channelId' and condition == 'channelName':
         channelName = value
-        return getchannelId_bychannelName(channelName, order)
+        return getchannel(channelName, order)
 
     elif query == 'video' and condition == 'channelName':
         channel = value
-        vedioList = getVideo_byChannel(channel, searchAll, order, stock, filter)
+        vedioList = getVideo(channel, searchAll, order, stock, filter)
         return vedioList
 
     elif query == 'channelName' and condition == 'favroiteType':
         typeName = value
-        channlList = getChannel_byFavroiteType(typeName, order)
+        channlList = getChannelByType(typeName, order)
         return channlList
 
 
-def getChannel_byFavroiteType(typeName, order):
+def getChannelByType(typeName, order):
     # to-do
     print(typeName + ' start...\n')
     url = 'https://www.googleapis.com/youtube/v3/search?part=snippet'
@@ -90,24 +90,35 @@ def getChannel_byFavroiteType(typeName, order):
     soup = BeautifulSoup(data.text, 'html.parser')
     d = json.loads(soup.text)
     search_result = d['items']
-    token = d['nextPageToken']
+    # token = d['nextPageToken']
     channeList = []
+    # dfList=[]
     for item in search_result:
         channelDesc = channel_detail(item['snippet']['channelId'])
-        channeList.append(channelDesc)
-        # search(Protocol.video, Protocol.channelName, channelDesc, Protocol.searchAll_False, Protocol.order_ByViewCount,
-        #        Protocol.stock_False, None)
-    return channeList
+        # channeList.append(channelDesc)
+        rowData = []
+        for key in channelDesc.keys():
+            rowData.append(channelDesc[key])
+        channeList.append(rowData)
+
+    df = pd.DataFrame(channeList,
+                      columns=['channel_name', 'channel_id', 'description', 'subscriberCount', 'videoCount',
+                               'viewCount', 'publishDate', 'picture'
+                               ])
+    # print(df)
+    print(typeName + "搜尋完成")
+    return df
 
 
-def getVideo_byChannel(channel, searchAll, order, stock, filter):
-    channelName = channel['title']
-    channelId = channel['id']
+def getVideo(channel, searchAll, order, stock, filter):
+    channelName = channel['channel_name']
+    channelId = channel['channel_id']
     print(channelName + "    " + channelId + '      Searching start...\n')
+    print("搜尋"+channelName+"下的MV影片...")
     videos = []
     rowDataList = []
     token = ''
-    index = 0
+    index = 1
     while True:
         url = 'https://www.googleapis.com/youtube/v3/search?part=snippet'
         if stock == True:
@@ -133,51 +144,55 @@ def getVideo_byChannel(channel, searchAll, order, stock, filter):
                     rowData = []
                     for key in detail.keys():
                         rowData.append(detail[key])
-                        # print(subDf)
                     rowDataList.append(rowData)
-                    print("搜尋到第" + str(index) + "筆資料...")
+                    print("搜尋到第" + str(index) + "筆MV影片...")
                     index = index + 1
 
             if stock == False and (len(rowDataList) > 20 or len(rowDataList) == 0):
                 if len(rowDataList) == 0:
-                    print(" Searching over... , But can't found data in " + channelName + " Searching.. ")
+                    print("找不到任何MV影片在" + channelName + "頻道之下...")
                 elif len(rowDataList) > 0:
-                    print(channelName + ' Searching over...\n')
+                    print(channelName + '該頻道所有MV影片已搜尋完成，搜尋完畢...\n')
                 break
             elif stock == True and (token == None or len(search_result) == 0):
-                print(channelName + ' Searching over...\n')
+                print(channelName + '該頻道所有MV影片已搜尋完成\n')
                 break
         except:
-            print("Can't found data or Error " + channelName)
+            print("找不到任何MV影片在" + channelName + "頻道之下...")
             break
     df = pd.DataFrame(rowDataList,
-                      columns=['name', 'id', 'url', 'publishDate', 'viewCount', 'tags', 'description', 'picture'])
+                      columns=['name', 'id', 'url', 'publishDate', 'viewCount', 'tags', 'description', 'picture',
+                               'Is DownLoad?'])
     return df
 
 
-def getchannelId_bychannelName(channelName, order):
+def getchannel(channelName, order):
+    print("搜尋" + channelName + "頻道中...")
     url = 'https://www.googleapis.com/youtube/v3/search?part=snippet'
     url = url + '&q=' + channelName
-    url = url + '&max-results=' + '10'
-    # if channelName == 'EXO':
-    #     url = url + '&order=' + 'videoCount'
-    # else:
-    #     url = url + '&order=' + 'relevance'
+    url = url + '&max-results=' + '5'
     url = url + '&order=' + order
     url = url + '&type=' + 'channel'
     url = url + '&key=' + DEVELOPER_KEY
     data = requests.get(url)
     soup = BeautifulSoup(data.text, 'html.parser')
     d = json.loads(soup.text)
-    max = {}
-    max['number'] = 0
     search_result = d['items']
+    channeList = []
+    i = 1
     for items in search_result:
         detail = channel_detail(items['snippet']['channelId'])
-        subNumber = detail['subscriberCount']
-        if int(subNumber) > max['number']:
-            max['title'] = detail['title']
-            max['channel'] = detail['id']
-            max['number'] = detail['subscriberCount']
-    print(max['title'])
-    return max['channel']
+        print("找到相似的頻道，為第" + str(i) + "筆")
+        i = i+1
+        rowData = []
+        for key in detail.keys():
+            rowData.append(detail[key])
+        channeList.append(rowData)
+
+    df = pd.DataFrame(channeList,
+                      columns=['channel_name', 'channel_id', 'description', 'subscriberCount', 'videoCount',
+                               'viewCount', 'publishDate', 'picture'
+                               ])
+    channel = df.loc[df['subscriberCount'].idxmax()]
+    print(channelName  + "搜尋完成")
+    return channel

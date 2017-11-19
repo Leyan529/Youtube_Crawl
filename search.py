@@ -15,6 +15,7 @@ import crawlData
 from skimage import io
 import Protocol
 import time
+import pandas as pd
 
 
 def showImg(img_src):
@@ -38,15 +39,15 @@ def mv_download():
     # try:
     start = float(time.time())
     for item in Protocol.Group_list:
-        channel = crawlData.search(Protocol.channelId, Protocol.channelName, item['Name'],
+        channelDf = crawlData.search(Protocol.channel, Protocol.channelName, item['Name'],
                                      Protocol.searchAll_True, Protocol.order_ByRelevance, None, None)
-        item['channel'] = channel
+        item['channel'] = channelDf #Excel 輸出
         print(item['channel'])
-        df = crawlData.search(Protocol.video, Protocol.channelName, item['channel'],
+        vedioListDf = crawlData.search(Protocol.video, Protocol.channelName, item['channel'],
                               Protocol.searchAll_True, Protocol.order_ByDate, Protocol.stock_True,
                               item['Filter'])
-        item['vedioList'] = df
-        print(df)
+        item['vedioList'] = vedioListDf #Excel 輸出
+        print(vedioListDf)
     end = float(time.time())
     print("執行時間 : " + str(end - start) + " s")
     # except HttpError as e:
@@ -57,38 +58,27 @@ def favorite():
     try:
         start = float(time.time())
         for index, item in enumerate(Protocol.Type_list):
-            if item['TYPE'] == 'K-POP channel':
-                channeListDf = crawlData.search(Protocol.channelName, Protocol.favroiteType, item['TYPE'],
+            favoriteType = item['TYPE']
+            if favoriteType == 'K-POP channel':
+                channeListDf = crawlData.search(Protocol.channlList, Protocol.favroiteType, favoriteType,
                                               Protocol.searchAll_True, Protocol.order_ByViewCount, Protocol.stock_False,
                                               None)
             else:
-                channeListDf = crawlData.search(Protocol.channelName, Protocol.favroiteType, item['TYPE'],
+                channeListDf = crawlData.search(Protocol.channlList, Protocol.favroiteType, favoriteType,
                                               Protocol.searchAll_True, Protocol.order_ByRelevance, Protocol.stock_False,
                                               None)
 
             Protocol.Type_list[index]['ChannelList'] = channeListDf
+
             for i in range(0,len(channeListDf)):
                 channelDf = channeListDf.loc[i]
                 channelDict = channelDf.to_dict()
-                vedioListdf = crawlData.search(Protocol.video, Protocol.channelName, channelDict, Protocol.searchAll_False,
+                vedioListdf = crawlData.search(Protocol.video, Protocol.channlList, channelDict, Protocol.searchAll_False,
                                       Protocol.order_ByRelevance,
                                       Protocol.stock_False, None)
-                vedioListdict = vedioListdf.to_dict()
-                channelDict["vedioList"] = vedioListdict
-                # channelDf.assign(vedioList = vedioListdf)
-                # 將撈回來的vedioListdf放入channelDf ?
-
-                # channeListDf.loc[i]["vedioList"] =
-                print(vedioListdict)
-
-            # for index, channel in enumerate(channeList):
-            #     # vedioList = crawlData.search(Protocol.video, Protocol.channelName, channel, Protocol.searchAll_False,
-            #     #                  Protocol.order_ByRelevance,
-            #     #                  Protocol.stock_False, None)
-            #     df = crawlData.search(Protocol.video, Protocol.channelName, channel, Protocol.searchAll_False,
-            #                           Protocol.order_ByRelevance,
-            #                           Protocol.stock_False, None)
-            #     channel["vedioList"] = df
+                Protocol.ChannelWithListVedio_EexcelOutput.append({'type': favoriteType, 'channelDf': channelDf})
+                print(vedioListdf) #用Excel 獨立輸出 vedioListdf_withFavorite
+            print(Protocol.ChannelWithListVedio_EexcelOutput) #由List 取得對應的Key後，用Excel 輸出
         end = float(time.time())
         print("執行時間 : " + str(end - start) + " s")
     except HttpError as e:

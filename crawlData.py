@@ -62,7 +62,7 @@ def get_channel_subsubscribers(channel_id):
 
 # query = search Field , condition = By where ,argu = 條件值 , searchAll(查詢全部) [True:False] , order 排序條件 ,stock 關鍵字查詢[True:False] ,Filter關鍵字
 def search(query, condition, value, searchAll, order, stock, filter):
-    if query == 'channelId' and condition == 'channelName':
+    if query == 'channel' and condition == 'channelName':
         channelName = value
         return getchannel(channelName, order)
 
@@ -71,7 +71,7 @@ def search(query, condition, value, searchAll, order, stock, filter):
         vedioList = getVideo(channel, searchAll, order, stock, filter)
         return vedioList
 
-    elif query == 'channelName' and condition == 'favroiteType':
+    elif query == 'channlList' and condition == 'favroiteType':
         typeName = value
         channlList = getChannelByType(typeName, order)
         return channlList

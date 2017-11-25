@@ -15,7 +15,8 @@ import crawlData
 from skimage import io
 import Protocol
 import time
-import pandas as pd
+import factory
+
 
 
 def showImg(img_src):
@@ -38,16 +39,20 @@ youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
 def mv_download():
     # try:
     start = float(time.time())
-    for item in Protocol.Group_list:
+    channelList =[]
+    for index,item in enumerate(Protocol.Group_list):
         channelDf = crawlData.search(Protocol.channel, Protocol.channelName, item['Name'],
                                      Protocol.searchAll_True, Protocol.order_ByRelevance, None, None)
-        item['channel'] = channelDf #Excel 輸出
-        print(item['channel'])
-        vedioListDf = crawlData.search(Protocol.video, Protocol.channelName, item['channel'],
+        channelDf['group_name'] = item['Group'] #塞入團名
+        item['channel'] = channelDf
+        dict = channelDf.to_dict()
+        channelList.append(dict)
+        vedioListDf = crawlData.search(Protocol.video, Protocol.channelName, channelDf,
                               Protocol.searchAll_True, Protocol.order_ByDate, Protocol.stock_True,
                               item['Filter'])
-        item['vedioList'] = vedioListDf #Excel 輸出
-        print(vedioListDf)
+        item['vedioList'] = vedioListDf
+        # print(vedioListDf)
+    factory.makeChannelExcel(channelList)
     end = float(time.time())
     print("執行時間 : " + str(end - start) + " s")
     # except HttpError as e:

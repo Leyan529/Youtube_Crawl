@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 import json
 import condition
 import pandas as pd
+import Protocol
 
 DEVELOPER_KEY = 'AIzaSyDWX7321N79YcXyFbulSEdU1zh1RIFM2Gg'
 
@@ -39,6 +40,7 @@ def channel_detail(channelId):
     data = requests.get(url)
     soup = BeautifulSoup(data.text, 'html.parser')
     d = json.loads(soup.text)
+    detail['group_name'] = ''
     detail['channel_name'] = d['items'][0]['snippet']['title']
     detail['channel_id'] = channelId
     detail['description'] = d['items'][0]['snippet']['description']
@@ -158,7 +160,8 @@ def getVideo(channel, searchAll, order, stock, filter):
                 print(channelName + '該頻道所有MV影片已搜尋完成\n')
                 break
         except:
-            print("找不到任何MV影片在" + channelName + "頻道之下...")
+            # print("找不到任何MV影片在" + channelName + "頻道之下...")
+            print("error")
             break
     df = pd.DataFrame(rowDataList,
                       columns=['name', 'id', 'url', 'publishDate', 'viewCount', 'tags', 'description', 'picture',
@@ -171,6 +174,8 @@ def getchannel(channelName, order):
     url = 'https://www.googleapis.com/youtube/v3/search?part=snippet'
     url = url + '&q=' + channelName
     url = url + '&max-results=' + '5'
+    if channelName == 'BTS' :
+        order = Protocol.order_ByViewCount
     url = url + '&order=' + order
     url = url + '&type=' + 'channel'
     url = url + '&key=' + DEVELOPER_KEY
@@ -190,7 +195,7 @@ def getchannel(channelName, order):
         channeList.append(rowData)
 
     df = pd.DataFrame(channeList,
-                      columns=['channel_name', 'channel_id', 'description', 'subscriberCount', 'videoCount',
+                      columns=['group_name','channel_name', 'channel_id', 'description', 'subscriberCount', 'videoCount',
                                'viewCount', 'publishDate', 'picture'
                                ])
     channel = df.loc[df['subscriberCount'].idxmax()]

@@ -5,6 +5,9 @@ import json
 import condition
 import pandas as pd
 import Protocol
+import requests as req
+from PIL import Image
+from io import BytesIO
 
 DEVELOPER_KEY = 'AIzaSyDWX7321N79YcXyFbulSEdU1zh1RIFM2Gg'
 
@@ -48,7 +51,7 @@ def channel_detail(channelId):
     detail['videoCount'] = int(d['items'][0]['statistics']['videoCount'])
     detail['viewCount'] = int(d['items'][0]['statistics']['viewCount'])
     detail['publishDate'] = d['items'][0]['snippet']['publishedAt'][0:10]
-    detail['picture'] = d['items'][0]['snippet']['thumbnails']['medium']['url']
+    detail['picture'] = d['items'][0]['snippet']['thumbnails']['default']['url']
     return detail
 
 
@@ -61,6 +64,10 @@ def get_channel_subsubscribers(channel_id):
     d = json.loads(soup.text)
     return int(d['items'][0]['statistics']['subscriberCount'])
 
+def getPicture(url):
+    response = req.get(url)
+    image = Image.open(BytesIO(response.content))
+    return image
 
 # query = search Field , condition = By where ,argu = 條件值 , searchAll(查詢全部) [True:False] , order 排序條件 ,stock 關鍵字查詢[True:False] ,Filter關鍵字
 def search(query, condition, value, searchAll, order, stock, filter):
@@ -116,7 +123,7 @@ def getVideo(channel, searchAll, order, stock, filter):
     channelName = channel['channel_name']
     channelId = channel['channel_id']
     print(channelName + "    " + channelId + '      Searching start...\n')
-    print("搜尋"+channelName+"下的MV影片...")
+    print("搜尋" + channelName + "下的MV影片...")
     videos = []
     rowDataList = []
     token = ''
@@ -169,12 +176,12 @@ def getVideo(channel, searchAll, order, stock, filter):
     return df
 
 
-def getchannel(channelName, order):
-    print("搜尋" + channelName + "頻道中...")
+def getchannel(group, order):
+    print("搜尋" + group + "頻道中...")
     url = 'https://www.googleapis.com/youtube/v3/search?part=snippet'
-    url = url + '&q=' + channelName
+    url = url + '&q=' + group
     url = url + '&max-results=' + '5'
-    if channelName == 'BTS' :
+    if group == 'BTS':
         order = Protocol.order_ByViewCount
     url = url + '&order=' + order
     url = url + '&type=' + 'channel'
@@ -188,16 +195,18 @@ def getchannel(channelName, order):
     for items in search_result:
         detail = channel_detail(items['snippet']['channelId'])
         print("找到相似的頻道，為第" + str(i) + "筆")
-        i = i+1
+        i = i + 1
         rowData = []
         for key in detail.keys():
             rowData.append(detail[key])
         channeList.append(rowData)
 
     df = pd.DataFrame(channeList,
-                      columns=['group_name','channel_name', 'channel_id', 'description', 'subscriberCount', 'videoCount',
+                      columns=['group_name', 'channel_name', 'channel_id', 'description', 'subscriberCount',
+                               'videoCount',
                                'viewCount', 'publishDate', 'picture'
                                ])
     channel = df.loc[df['subscriberCount'].idxmax()]
-    print(channelName  + "搜尋完成")
+    print("搜尋完成，" + group + "的頻道為" + channel['channel_name'])
+    # channel['group_name'] = group
     return channel

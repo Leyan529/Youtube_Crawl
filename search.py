@@ -52,7 +52,7 @@ def mv_download():
                               item['Filter'])
         item['vedioList'] = vedioListDf
         # print(vedioListDf)
-    factory.makeChannelExcel(channelList)
+    factory.makeChannelExcel(channelList,Protocol.Group_list)
     end = float(time.time())
     print("執行時間 : " + str(end - start) + " s")
     # except HttpError as e:

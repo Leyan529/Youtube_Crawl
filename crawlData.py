@@ -25,7 +25,7 @@ def vedio_detail(vedio_id):
 
         detail['name'] = d['items'][0]['snippet']['title']
         detail['vedio_id'] = vedio_id
-        detail['url'] = "https://www.youtube.com/watch?v=" + vedio_id,
+        detail['url'] = "https://www.youtube.com/watch?v=" + vedio_id
         detail['publishDate'] = d['items'][0]['snippet']['publishedAt'][0:10]
         detail['viewCount'] = d['items'][0]['statistics']['viewCount']
         detail['tags'] = d['items'][0]['snippet']['tags']

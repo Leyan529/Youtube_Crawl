@@ -15,10 +15,15 @@ title = ['Group_Name',
          'Channel Picture',
          'Vedio Publish Map']
 
-key = ['group_name', 'channel_name', 'channel_id', 'description', 'subscriberCount',
-       'videoCount',
-       'viewCount', 'publishDate', 'picture'
-       ]
+channelKey = ['group_name', 'channel_name', 'channel_id', 'description', 'subscriberCount',
+              'videoCount',
+              'viewCount', 'publishDate', 'picture'
+              ]
+
+vedioKey = ['name', 'id', 'url', 'publishDate', 'viewCount',
+            'tags',
+            'description', 'picture', 'Is DownLoad?'
+            ]
 pict_index = ['B']
 
 
@@ -64,7 +69,7 @@ def makeChannelSheet(workbook, channeList):
     colOffset = 1
 
     for col_num, dict_item in enumerate(channeList):
-        for key_index, dict_key in enumerate(key):
+        for key_index, dict_key in enumerate(channelKey):
             # print(dict_item[dict_key])
             if dict_item[dict_key] != '':
                 if dict_key != 'picture':
@@ -79,8 +84,33 @@ def makeChannelSheet(workbook, channeList):
 
 def makeVedioListSheet(workbook, groupName, vedioDf):
     worksheet = workbook.add_worksheet(groupName)
-    print(groupName)
-    print(vedioDf)
+    value_format = workbook.add_format({
+        'bold': False,
+        'text_wrap': True,
+        'valign': 'top',
+        'fg_color': '#E9A05F',
+        'border': 1})
+
+    colOffset = 1
+
+    for col_num in range(0, int(vedioDf['name'].count())):
+        for key_index, dict_key in enumerate(vedioKey):
+            item = vedioDf.iloc[col_num][dict_key]
+            if type(item) == type('str'):
+                if dict_key == 'picture':
+                    pict_url = item
+                    image_data = BytesIO(urlopen(pict_url).read())
+                    worksheet.insert_image(key_index, col_num + colOffset, pict_url,
+                                           {'image_data': image_data, 'x_offset': 60, 'y_offset': 5,
+                                            'positioning': 1})
+                else:
+                    worksheet.write(key_index, col_num + colOffset, item, value_format)
+            elif type(item) == type([]):
+                tags = item
+                str = ''
+                for index, tag in enumerate(tags):
+                    str = str + tag + '\n'
+                worksheet.write(key_index, col_num + colOffset, str, value_format)
 
 # def writeImgToExcel(pict_url):
 #     writer = pd.ExcelWriter('pandas_img.xlsx', engine='xlsxwriter')

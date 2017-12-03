@@ -2,6 +2,7 @@ import pandas as pd
 import crawlData
 from io import BytesIO
 from urllib.request import urlopen
+import xlwt
 
 title = ['Group_Name',
          'Channel_ID',
@@ -20,13 +21,25 @@ key = ['group_name', 'channel_name', 'channel_id', 'description', 'subscriberCou
        ]
 pict_index = ['B']
 
-def makeChannelExcel(channeList, groupList):
+
+def makeExcel(channeList, groupList):
+    writer = pd.ExcelWriter('Youtube Crawl.xlsx', engine='xlsxwriter')
+    workbook = writer.book
+    makeChannelSheet(workbook, channeList)
+    for index, item in enumerate(groupList):
+        makeVedioListSheet(workbook, item['Group'], item['vedioList'])
+    writer.save()
+    # print(channeList)  # Excel 輸出
+
+
+def makeChannelSheet(workbook, channeList):
     df = pd.DataFrame({}, columns=title)
     df = df[title]
-
-    writer = pd.ExcelWriter('pandas_simple.xlsx', engine='xlsxwriter')
-    workbook = writer.book
     worksheet = workbook.add_worksheet('Channel')
+
+    worksheet.set_column('A:Z', 30)
+    # worksheet.set_column('B:B', 30)
+    worksheet.set_default_row(70, hide_unused_rows=True)
 
     # Add a header format.
     header_format = workbook.add_format({
@@ -53,22 +66,28 @@ def makeChannelExcel(channeList, groupList):
     for col_num, dict_item in enumerate(channeList):
         for key_index, dict_key in enumerate(key):
             # print(dict_item[dict_key])
-            if dict_key != 'picture':
-                worksheet.write(key_index, col_num + colOffset, dict_item[dict_key], value_format)
-            else:
-                pict_url = dict_item[dict_key]
-                image_data = BytesIO(urlopen(pict_url).read())
-                worksheet.insert_image(key_index, col_num + colOffset, pict_url, {'image_data': image_data})
-    writer.save()
-    print(channeList)  # Excel 輸出
+            if dict_item[dict_key] != '':
+                if dict_key != 'picture':
+                    worksheet.write(key_index, col_num + colOffset, dict_item[dict_key], value_format)
+                else:
+                    pict_url = dict_item[dict_key]
+                    image_data = BytesIO(urlopen(pict_url).read())
+                    worksheet.insert_image(key_index, col_num + colOffset, pict_url,
+                                           {'image_data': image_data, 'x_offset': 60, 'y_offset': 5,
+                                            'positioning': 1})
 
 
-def writeImgToExcel(pict_url):
-    writer = pd.ExcelWriter('pandas_img.xlsx', engine='xlsxwriter')
-    workbook = writer.book
-    worksheet = workbook.add_worksheet('Pict')
-    # image = crawlData.getPicture(pict_url)
-    # image.show()
-    image_data = BytesIO(urlopen(pict_url).read())
-    worksheet.insert_image('B2', pict_url, {'image_data': image_data})
-    writer.save()
+def makeVedioListSheet(workbook, groupName, vedioDf):
+    worksheet = workbook.add_worksheet(groupName)
+    print(groupName)
+    print(vedioDf)
+
+# def writeImgToExcel(pict_url):
+#     writer = pd.ExcelWriter('pandas_img.xlsx', engine='xlsxwriter')
+#     workbook = writer.book
+#     worksheet = workbook.add_worksheet('Pict')
+#     # image = crawlData.getPicture(pict_url)
+#     # image.show()
+#     image_data = BytesIO(urlopen(pict_url).read())
+#     worksheet.insert_image('B2', pict_url, {'image_data': image_data,})
+#     writer.save()

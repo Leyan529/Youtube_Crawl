@@ -13,23 +13,27 @@ DEVELOPER_KEY = 'AIzaSyDWX7321N79YcXyFbulSEdU1zh1RIFM2Gg'
 
 
 def vedio_detail(vedio_id):
-    detail = {}
-    url = "https://www.googleapis.com/youtube/v3/videos?part=snippet%2CcontentDetails%2Cstatistics"
-    url = url + '&id=' + vedio_id
-    url = url + '&key=' + DEVELOPER_KEY
-    data = requests.get(url)
-    soup = BeautifulSoup(data.text, 'html.parser')
-    d = json.loads(soup.text)
+    detail = {'name': '', 'vedio_id': '', 'url': '', 'publishDate': '', 'viewCount': '', 'tags': '', 'description': '',
+              'picture': '', 'Is DownLoad?': ''}
+    try:
+        url = "https://www.googleapis.com/youtube/v3/videos?part=snippet%2CcontentDetails%2Cstatistics"
+        url = url + '&id=' + vedio_id
+        url = url + '&key=' + DEVELOPER_KEY
+        data = requests.get(url)
+        soup = BeautifulSoup(data.text, 'html.parser')
+        d = json.loads(soup.text)
 
-    detail['name'] = d['items'][0]['snippet']['title']
-    detail['vedio_id'] = vedio_id
-    detail['url'] = "https://www.youtube.com/watch?v=" + vedio_id,
-    detail['publishDate'] = d['items'][0]['snippet']['publishedAt'][0:10]
-    detail['viewCount'] = d['items'][0]['statistics']['viewCount']
-    detail['tags'] = d['items'][0]['snippet']['tags']
-    detail['description'] = d['items'][0]['snippet']['description']
-    detail['picture'] = d['items'][0]['snippet']['thumbnails']['medium']['url']
-    detail['Is DownLoad?'] = 'N'
+        detail['name'] = d['items'][0]['snippet']['title']
+        detail['vedio_id'] = vedio_id
+        detail['url'] = "https://www.youtube.com/watch?v=" + vedio_id,
+        detail['publishDate'] = d['items'][0]['snippet']['publishedAt'][0:10]
+        detail['viewCount'] = d['items'][0]['statistics']['viewCount']
+        detail['tags'] = d['items'][0]['snippet']['tags']
+        detail['description'] = d['items'][0]['snippet']['description']
+        detail['picture'] = d['items'][0]['snippet']['thumbnails']['medium']['url']
+        detail['Is DownLoad?'] = 'N'
+    except:
+        vedio_detail_error = True
     # df = pd.DataFrame([detail], columns=detail.keys())
     # print(df.iloc[0]['viewCount'])
     return detail
@@ -64,10 +68,12 @@ def get_channel_subsubscribers(channel_id):
     d = json.loads(soup.text)
     return int(d['items'][0]['statistics']['subscriberCount'])
 
+
 def getPicture(url):
     response = req.get(url)
     image = Image.open(BytesIO(response.content))
     return image
+
 
 # query = search Field , condition = By where ,argu = 條件值 , searchAll(查詢全部) [True:False] , order 排序條件 ,stock 關鍵字查詢[True:False] ,Filter關鍵字
 def search(query, condition, value, searchAll, order, stock, filter):
